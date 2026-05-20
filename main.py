@@ -1,6 +1,7 @@
 from parser import MapParser
 from models import DroneMap
 from pydantic import ValidationError
+from graph import Graph
 
 
 def main():
@@ -23,6 +24,8 @@ def main():
     )
     for m in map:
         print(m)
+    g = Graph(map)
+    print(g.connected_neighbors)
 
 
 if __name__ == "__main__":
