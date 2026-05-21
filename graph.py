@@ -1,20 +1,23 @@
-from models import DroneMap, Connection, Zone, Hub
+from models import DroneMap, Hub
 
 
-class Graph:
-    def __init__(self, drone_map: DroneMap):
-        self.connected_neighbors: dict[str, list[str]] = {
+class Graph(DroneMap):
+    connected_neighbors: dict[str, list[Hub]] = {}
+
+    def model_post_init(self, __context):
+        all_hubs = [
+            self.start_hub,
+            self.end_hub,
+            *self.hubs
+        ]
+        self.connected_neighbors = {
             hub.name: []
-            for hub in drone_map.hubs
+            for hub in all_hubs
         }
-        for key in self.connected_neighbors:
-            for connection in drone_map.connections:
-                if key == connection.hub1 or key == connection.hub2:
-                    self.connected_neighbors[key].append(
-                        connection.hub1 if key != connection.hub1 else connection.hub2
-                    )
-        self.start = drone_map.start_hub
-        self.end = drone_map.end_hub
-        self.nb_drones = drone_map.nb_drones
 
-        
+        for conn in self.connections:
+            hub1 = self.get_hub(conn.hub1)
+            hub2 = self.get_hub(conn.hub2)
+            self.connected_neighbors[hub1.name].append(hub2)
+            self.connected_neighbors[hub2.name].append(hub1)
+        # self.connected_neighbors[self.start_hub]

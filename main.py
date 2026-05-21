@@ -1,5 +1,4 @@
 from parser import MapParser
-from models import DroneMap
 from pydantic import ValidationError
 from graph import Graph
 
@@ -15,17 +14,24 @@ def main():
     # print(p._connections)
     # print()
     # print(p._all_hubs_name)
-    map = DroneMap(
+    # map = DroneMap(
+    #     nb_drones=p._nb_drones,
+    #     start_hub=p._start_hub,
+    #     end_hub=p._end_hub,
+    #     hubs=p._hubs,
+    #     connections=p._connections,
+    # )
+    # for m in map:
+    #     print(m)
+    g = Graph(
         nb_drones=p._nb_drones,
         start_hub=p._start_hub,
         end_hub=p._end_hub,
         hubs=p._hubs,
         connections=p._connections,
     )
-    for m in map:
-        print(m)
-    g = Graph(map)
-    print(g.connected_neighbors)
+    for k, v in g.connected_neighbors.items():
+        print(k, *v)
 
 
 if __name__ == "__main__":

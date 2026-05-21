@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
+from abc import ABC
 from enum import Enum
 
 
@@ -31,9 +32,19 @@ class Connection(BaseModel):
     max_link_cap: int = Field(default=1, gt=0)
 
 
-class DroneMap(BaseModel):
+class DroneMap(BaseModel, ABC):
     nb_drones: int = Field(gt=0)
     start_hub: Hub
     end_hub: Hub
     hubs: list[Hub]
     connections: list[Connection]
+
+    def get_hub(self, name: str) -> Hub:
+        if name == self.start_hub.name:
+            return self.start_hub
+        if name == self.end_hub.name:
+            return self.end_hub
+        for hub in self.hubs:
+            if name == hub.name:
+                return hub
+        raise ValueError(f"Unknown Hub: {name}")
