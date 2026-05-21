@@ -5,4 +5,4 @@ class Drone:
     def __init__(self, id):
         self.id = id
         # {id: list[(hub or connection, turn, count of drone in that hub or conn)]}
-        self.reservation: dict[int, list[tuple[Hub | Connection, int, int]]] = {}
+        self.path: list[tuple[Hub, int]] = []

@@ -58,3 +58,10 @@ class DroneMap(BaseModel, ABC):
             if name == hub.name:
                 return hub
         raise ValueError(f"Unknown Hub: {name}")
+    
+    def get_connection(self, hub1: Hub, hub2: Hub) -> Connection:
+        for conn in self.connections:
+            if (hub1.name == conn.hub1 and hub2.name == conn.hub2) or\
+               (hub1.name == conn.hub2 and hub2.name == conn.hub1):
+                return conn
+        raise ValueError(f"No connection between {hub1.name} and {hub2.name}")
