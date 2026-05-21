@@ -16,6 +16,7 @@ class Hub(BaseModel):
     zone: Zone = Zone.normal
     color: str | None = None
     max_drones: int = Field(default=1, gt=0)
+    cost: float = 1
 
     @model_validator(mode="after")
     def hub_name_validation(self):
@@ -23,6 +24,15 @@ class Hub(BaseModel):
             raise ValueError(
                 "The connection syntax forbids dashes in zone names."
             )
+        match self.zone:
+            case Zone.normal:
+                self.cost = 1
+            case Zone.blocked:
+                self.cost = -1
+            case Zone.restricted:
+                self.cost = 2
+            case Zone.priority:
+                self.cost = 0.5
         return self
 
 

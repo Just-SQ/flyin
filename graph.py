@@ -20,4 +20,3 @@ class Graph(DroneMap):
             hub2 = self.get_hub(conn.hub2)
             self.connected_neighbors[hub1.name].append(hub2)
             self.connected_neighbors[hub2.name].append(hub1)
-        # self.connected_neighbors[self.start_hub]
