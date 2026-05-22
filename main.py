@@ -6,6 +6,7 @@ from simulation import Simulation
 
 
 def main():
+    # IMPORTANT -> THE Y IS FLIPED THE HUBS THAT NEED TO BE SHOWN UP IT SHOWED DOWN AND VICE VERSA
     path = "maps/challenger/01_the_impossible_dream.txt"
     p = MapParser(path)
     p.parse()
