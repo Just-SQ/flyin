@@ -21,16 +21,12 @@ class Algo:
 
         dist: dict[tuple[str, int], float] = {(start, 0): 0}
         prev: dict[SpaceTime, SpaceTime] = {}
-        visited: set[tuple[str, int]] = set()
+        visited_hub: set[str] = {start}
         pq = [(0.0, start, 0)]  # (cost, hub_name, turn)
 
         while pq:
             cost, hub_name, turn = heappop(pq)
             hub = self.graph.get_hub(hub_name)
-
-            if (hub_name, turn) in visited:
-                continue
-            visited.add((hub_name, turn))
 
             if hub_name == end:
                 return self._reconstruct_path(prev, turn)
@@ -45,19 +41,20 @@ class Algo:
                 conn = self.graph.get_connection(neighbor, hub)
 
                 if self._is_over_capacity(neighbor, conn, next_turn, turn):
+                    next_turn = turn + 1
+                    next_cost = cost + 1
+                    if next_cost < dist.get((hub_name, next_turn), float('inf')):
+                        dist[(hub_name, next_turn)] = next_cost
+                        prev[(hub, next_turn)] = (hub, turn)
+                        heappush(pq, (next_cost, hub_name, next_turn))
                     continue
+                if neighbor.name in visited_hub:
+                    continue
+                visited_hub.add(neighbor.name)
                 if next_cost < dist.get((neighbor.name, next_turn), float('inf')):
                     dist[(neighbor.name, next_turn)] = next_cost
                     prev[(neighbor, next_turn)] = (hub, turn)
                     heappush(pq, (next_cost, neighbor.name, next_turn))
-
-            # Try waiting at current hub
-            next_turn = turn + 1
-            next_cost = cost + 1.5
-            if next_turn <= max_turn and next_cost < dist.get((hub_name, next_turn), float('inf')):
-                dist[(hub_name, next_turn)] = next_cost
-                prev[(hub, next_turn)] = (hub, turn)
-                heappush(pq, (next_cost, hub_name, next_turn))
 
         raise ValueError("No path found")
 

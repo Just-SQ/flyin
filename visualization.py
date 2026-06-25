@@ -104,7 +104,7 @@ class Visualization:
             self.ax.set_title(f"Simulation Turn {turn}",
                               color="white", fontsize=14, fontweight="bold")
             self.ax.axis("off")
-            plt.pause(0.03)  # faster
+            plt.pause(0.05)  # ← tweak: seconds per frame (0.03=fast, 0.15=very slow)
 
     def _interpolate(
         self,

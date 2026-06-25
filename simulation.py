@@ -18,7 +18,7 @@ class Simulation:
             movements = self._get_movement(turn)
             print(" ".join(movements))
             if self.visual:
-                self.visual.draw_animated(turn, steps=10)
+                self.visual.draw_animated(turn, steps=10)  # ← tweak: frames between turns (10=normal, 30=ultra smooth)
             turn += 1
         if self.visual:
             self.visual.stop()
