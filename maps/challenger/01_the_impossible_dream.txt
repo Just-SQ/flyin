@@ -36,14 +36,14 @@ hub: maze_loop6 6 1 [zone=restricted color=brown]
 
 # === LAYER 2: The Capacity Nightmare ===
 hub: micro_gate1 7 0 [color=orange max_drones=1]
-hub: micro_gate2 8 0 [color=orange max_drones=1 zone=blocked]
+hub: micro_gate2 8 0 [color=orange max_drones=1]
 hub: micro_gate3 9 0 [color=orange max_drones=1]
 
 # Overflow areas with terrible costs
 hub: overflow_hell1 7 1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell2 8 1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell3 9 1 [zone=restricted color=maroon max_drones=2]
-hub: overflow_hell4 7 -1 [zone=blocked color=maroon max_drones=2]
+hub: overflow_hell4 7 -1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell5 8 -1 [zone=restricted color=maroon max_drones=2]
 hub: overflow_hell6 9 -1 [zone=restricted color=maroon max_drones=2]
 

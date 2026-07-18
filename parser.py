@@ -1,8 +1,26 @@
+"""Parsing of the map file format into raw dictionaries.
+
+The MapParser reads a map description and validates each directive, producing
+plain data (dicts/lists) later handed to the Graph model. It performs no
+pathfinding — only syntactic validation and extraction.
+"""
 from typing import Any
 
 
 class MapParser:
+    """Parse a map file into the raw data used to build a Graph.
+
+    Reads the ``nb_drones``, ``start_hub``, ``end_hub``, ``hub`` and
+    ``connection`` directives, validates their syntax, and stores the result
+    in per-kind attributes (all prefixed with an underscore).
+    """
+
     def __init__(self, file_path: str) -> None:
+        """Store the path to parse and initialize empty result buffers.
+
+        Args:
+            file_path: Path to the map file to read.
+        """
         self.file_path: str = file_path
         self._nb_drones: int = 0
         self._start_hub: dict[str, Any] = {}
@@ -10,14 +28,24 @@ class MapParser:
         self._hubs: list[dict[str, Any]] = []
         self._all_hubs_name: set[str] = set()
         self._connections: list[dict[str, Any]] = []
-        self.__seen = set()
+        self.__seen: set[frozenset[str]] = set()
 
     def parse(self) -> None:
+        """Read the map file line by line and validate each directive."""
         with open(self.file_path) as f:
             for i, line in enumerate(f, start=1):
                 self._validate_line(line.strip(), i)
 
     def _validate_line(self, line: str, line_nb: int) -> None:
+        """Parse and dispatch a single line by its directive prefix.
+
+        Args:
+            line: The raw line text.
+            line_nb: 1-based line number, used in error messages.
+
+        Raises:
+            ValueError: If the line is malformed or uses an unknown prefix.
+        """
         line = line.split("#")[0].strip()
         if not line:
             return
@@ -43,6 +71,7 @@ class MapParser:
                 self._start_hub = self._hub_parsing(rest, line_nb)
             case "end_hub":
                 self._end_hub = self._hub_parsing(rest, line_nb)
+                self._end_hub["max_drones"] = self._nb_drones
             case "hub":
                 self._hubs.append(self._hub_parsing(rest, line_nb))
             case "connection":
@@ -56,7 +85,19 @@ class MapParser:
                 )
 
     def _hub_parsing(self, rest: str, line_nb: int) -> dict[str, Any]:
-        result = {}
+        """Parse a hub definition (``<name> <x> <y> [metadata]``).
+
+        Args:
+            rest: The directive text after the ``hub:`` prefix.
+            line_nb: 1-based line number, used in error messages.
+
+        Returns:
+            A dict of hub fields (name, coordinates and any metadata).
+
+        Raises:
+            ValueError: If the coordinates or metadata are malformed.
+        """
+        result: dict[str, Any] = {}
         if "[" in rest:
             info, meta = rest.split("[", 1)
             meta = meta.strip()
@@ -70,8 +111,8 @@ class MapParser:
             info = rest
             meta = ""
         try:
-            name, x, y = info.split()
-            x, y = int(x), int(y)
+            name, x_str, y_str = info.split()
+            x, y = int(x_str), int(y_str)
         except ValueError:
             raise ValueError(
                 f"Line {line_nb}: "
@@ -82,8 +123,7 @@ class MapParser:
         result.update({"name": name, "coordinates": (x, y)})
         self._all_hubs_name.add(name)
         if meta:
-            meta = meta.split()
-            for meta_def in meta:
+            for meta_def in meta.split():
                 try:
                     meta_key, meta_value = meta_def.split("=")
                 except ValueError:
@@ -116,7 +156,20 @@ class MapParser:
             rest: str,
             line_nb: int
     ) -> dict[str, Any]:
-        result = {}
+        """Parse a connection definition (``<hub1>-<hub2> [metadata]``).
+
+        Args:
+            rest: The directive text after the ``connection:`` prefix.
+            line_nb: 1-based line number, used in error messages.
+
+        Returns:
+            A dict with the two endpoint names and any capacity metadata.
+
+        Raises:
+            ValueError: If an endpoint is unknown, the link is a duplicate,
+                or the metadata is malformed.
+        """
+        result: dict[str, Any] = {}
         if "[" in rest:
             info, meta = rest.split("[", 1)
             meta = meta.strip()
