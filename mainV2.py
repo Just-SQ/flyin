@@ -33,6 +33,8 @@ if __name__ == "__main__":
         main()
     # except ValidationError as e:
     #     print(e)
+    except FileNotFoundError:
+        print("The file does not exist")
     except ValueError as e:
         print(e)
     except Exception as e:

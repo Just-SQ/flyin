@@ -35,6 +35,14 @@ class MapParser:
         with open(self.file_path) as f:
             for i, line in enumerate(f, start=1):
                 self._validate_line(line.strip(), i)
+            if not self._start_hub:
+                raise ValueError("Missing start_hub definition")
+            if not self._end_hub:
+                raise ValueError("Missing end_hub definition")
+            if not self._nb_drones:
+                raise ValueError("Missing nb_drones definition")
+            if not self._connections:
+                raise ValueError("Missing connection definition")
 
     def _validate_line(self, line: str, line_nb: int) -> None:
         """Parse and dispatch a single line by its directive prefix.
@@ -62,14 +70,24 @@ class MapParser:
             case "nb_drones":
                 try:
                     self._nb_drones = int(rest)
+                    if self._nb_drones <= 0:
+                        raise ValueError()
                 except ValueError:
                     raise ValueError(
                         f"Line {line_nb}: "
                         "nb_drones should be a valid interger"
                     )
             case "start_hub":
+                if self._start_hub:
+                    raise ValueError(
+                        f"Line {line_nb}: multiple start_hub definitions"
+                    )
                 self._start_hub = self._hub_parsing(rest, line_nb)
             case "end_hub":
+                if self._end_hub:
+                    raise ValueError(
+                        f"Line {line_nb}: multiple end_hub definitions"
+                    )
                 self._end_hub = self._hub_parsing(rest, line_nb)
                 self._end_hub["max_drones"] = self._nb_drones
             case "hub":
@@ -98,6 +116,7 @@ class MapParser:
             ValueError: If the coordinates or metadata are malformed.
         """
         result: dict[str, Any] = {}
+        zones: set[str] = {"blocked", "normal", "restricted", "priority"}
         if "[" in rest:
             info, meta = rest.split("[", 1)
             meta = meta.strip()
@@ -121,6 +140,16 @@ class MapParser:
                 "valid intergers"
             )
         result.update({"name": name, "coordinates": (x, y)})
+        if name in self._all_hubs_name:
+            raise ValueError(
+                f"Line {line_nb}: "
+                "duplicate hub name"
+            )
+        if '-' in name or " " in name:
+            raise ValueError(
+                f"Line {line_nb}:"
+                "hub name can't contain dashes or spaces"
+            )
         self._all_hubs_name.add(name)
         if meta:
             for meta_def in meta.split():
@@ -133,16 +162,26 @@ class MapParser:
                     )
                 match meta_key.strip():
                     case "zone":
-                        result["zone"] = meta_value
+                        if meta_value in zones:
+                            result["zone"] = meta_value
+                        else:
+                            raise ValueError(
+                                f"Line {line_nb}: invalid zone type "
+                                f"'{meta_value}' (must be normal, "
+                                "priority, restricted or blocked)"
+                            )
                     case "color":
                         result["color"] = meta_value
                     case "max_drones":
                         try:
                             result["max_drones"] = int(meta_value)
+                            if result["max_drones"] <= 0:
+                                raise ValueError()
                         except ValueError:
                             raise ValueError(
                                 f"Line {line_nb}: "
-                                "max_drones value should be a valid interger"
+                                "max_drones value should be a "
+                                "valid and positive interger"
                             )
                     case _:
                         raise ValueError(
@@ -219,6 +258,8 @@ class MapParser:
                 )
             try:
                 result["max_link_cap"] = int(meta_value)
+                if result["max_link_cap"] <= 0:
+                    raise ValueError()
             except ValueError:
                 raise ValueError(
                     f"Line {line_nb}: "
