@@ -27,6 +27,7 @@ class MapParser:
         self._end_hub: dict[str, Any] = {}
         self._hubs: list[dict[str, Any]] = []
         self._all_hubs_name: set[str] = set()
+        self._all_coordinates: set[tuple[int, int]] = set()
         self._connections: list[dict[str, Any]] = []
         self.__seen: set[frozenset[str]] = set()
 
@@ -66,8 +67,17 @@ class MapParser:
                 "missing ':' — expected a valid prefix (nb_drones, "
                 "hub, start_hub, end_hub, connection)."
             )
-        match prefix.strip():
+        prefix = prefix.strip()
+        if not self._nb_drones and prefix != "nb_drones":
+            raise ValueError(
+                f"Line {line_nb}: nb_drones must be the first directive"
+            )
+        match prefix:
             case "nb_drones":
+                if self._nb_drones:
+                    raise ValueError(
+                        f"Line {line_nb}: multiple nb_drones definitions"
+                    )
                 try:
                     self._nb_drones = int(rest)
                     if self._nb_drones <= 0:
@@ -75,7 +85,7 @@ class MapParser:
                 except ValueError:
                     raise ValueError(
                         f"Line {line_nb}: "
-                        "nb_drones should be a valid interger"
+                        "nb_drones must be a valid positive integer"
                     )
             case "start_hub":
                 if self._start_hub:
@@ -83,6 +93,7 @@ class MapParser:
                         f"Line {line_nb}: multiple start_hub definitions"
                     )
                 self._start_hub = self._hub_parsing(rest, line_nb)
+                self._start_hub["max_drones"] = self._nb_drones
             case "end_hub":
                 if self._end_hub:
                     raise ValueError(
@@ -98,8 +109,9 @@ class MapParser:
                 )
             case _:
                 raise ValueError(
-                    f"Line {line_nb}: "
-                    f"{prefix} is an unknown definition"
+                    f"Line {line_nb}: '{prefix}' is not a valid "
+                    "directive (expected nb_drones, hub, start_hub, "
+                    "end_hub or connection)"
                 )
 
     def _hub_parsing(self, rest: str, line_nb: int) -> dict[str, Any]:
@@ -135,32 +147,42 @@ class MapParser:
         except ValueError:
             raise ValueError(
                 f"Line {line_nb}: "
-                "the hub infos should be in this format: "
-                "<name> <x> <y> and x and y should be "
-                "valid intergers"
+                "hub must be in the format '<name> <x> <y>' "
+                "with integer coordinates"
             )
         result.update({"name": name, "coordinates": (x, y)})
         if name in self._all_hubs_name:
             raise ValueError(
-                f"Line {line_nb}: "
-                "duplicate hub name"
+                f"Line {line_nb}: duplicate hub name '{name}'"
             )
-        if '-' in name or " " in name:
+        if (x, y) in self._all_coordinates:
             raise ValueError(
-                f"Line {line_nb}:"
-                "hub name can't contain dashes or spaces"
+                f"Line {line_nb}: duplicate hub coordinates ({x}, {y})"
+            )
+        if '-' in name:
+            raise ValueError(
+                f"Line {line_nb}: "
+                f"hub name '{name}' can't contain a dash '-'"
             )
         self._all_hubs_name.add(name)
+        self._all_coordinates.add((x, y))
         if meta:
+            seen_keys: set[str] = set()
             for meta_def in meta.split():
                 try:
                     meta_key, meta_value = meta_def.split("=")
                 except ValueError:
                     raise ValueError(
                         f"Line {line_nb}: "
-                        "metadata should be in this format meta_key=meta_data"
+                        "metadata must be in the format 'key=value'"
                     )
-                match meta_key.strip():
+                meta_key = meta_key.strip()
+                if meta_key in seen_keys:
+                    raise ValueError(
+                        f"Line {line_nb}: duplicate metadata key '{meta_key}'"
+                    )
+                seen_keys.add(meta_key)
+                match meta_key:
                     case "zone":
                         if meta_value in zones:
                             result["zone"] = meta_value
@@ -180,13 +202,13 @@ class MapParser:
                         except ValueError:
                             raise ValueError(
                                 f"Line {line_nb}: "
-                                "max_drones value should be a "
-                                "valid and positive interger"
+                                "max_drones must be a valid positive integer"
                             )
                     case _:
                         raise ValueError(
                             f"Line {line_nb}: "
-                            f"{meta_key} is Invalid metadata key"
+                            f"'{meta_key}' is not a valid metadata key "
+                            "(expected zone, color or max_drones)"
                         )
         return result
 
@@ -227,15 +249,19 @@ class MapParser:
         except ValueError:
             raise ValueError(
                 f"Line {line_nb}: "
-                "Connections definition should be in this format hub1-hub2"
+                "connection must be in the format 'hub1-hub2'"
+            )
+        if hub1 == hub2:
+            raise ValueError(
+                f"Line {line_nb}: a hub can't connect to itself"
             )
         if hub1 not in self._all_hubs_name:
             raise ValueError(
-                f"Line {line_nb}: hub name {hub1} doesn't exist"
+                f"Line {line_nb}: hub '{hub1}' doesn't exist"
             )
         if hub2 not in self._all_hubs_name:
             raise ValueError(
-                f"Line {line_nb}: hub name {hub2} doesn't exist"
+                f"Line {line_nb}: hub '{hub2}' doesn't exist"
             )
         if {hub1, hub2} in self.__seen:
             raise ValueError(
@@ -249,12 +275,13 @@ class MapParser:
             except ValueError:
                 raise ValueError(
                     f"Line {line_nb}: "
-                    "metadata should be in this format meta_key=meta_data"
+                    "metadata must be in the format 'key=value'"
                 )
             if meta_key != "max_link_capacity":
                 raise ValueError(
                     f"Line {line_nb}: "
-                    f"{meta_key} unknown metadat key for connection"
+                    f"'{meta_key}' is not a valid connection metadata key "
+                    "(expected max_link_capacity)"
                 )
             try:
                 result["max_link_cap"] = int(meta_value)
@@ -263,6 +290,6 @@ class MapParser:
             except ValueError:
                 raise ValueError(
                     f"Line {line_nb}: "
-                    "max_link_capacity value should be a valid integer"
+                    "max_link_capacity must be a valid positive integer"
                 )
         return result

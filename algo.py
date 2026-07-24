@@ -4,9 +4,9 @@ Implements a time-expanded Dijkstra search (``dijkstra_mapf``) that plans one
 drone at a time while reserving hub/connection capacity in space-time, so later
 drones avoid conflicts with already-committed ones (prioritized planning).
 """
-from modelsV2 import Graph, Hub, Connection, Drone
-from heapq import heappush, heappop
+from heapq import heappop, heappush
 
+from models import Connection, Drone, Graph, Hub
 
 # A position in both space (hub) and time (turn)
 SpaceTime = tuple[Hub, int]
@@ -33,7 +33,7 @@ class Algo:
         self.hub_occupancy: dict[SpaceTime, int] = {}
         self.conn_occupancy: dict[tuple[Connection, int], int] = {}
         self.drones: list[Drone] = [
-            Drone(i) for i in range(1, self.graph.nb_drones + 1)
+            Drone(id=i) for i in range(1, self.graph.nb_drones + 1)
         ]
 
     def dijkstra_mapf(self) -> list[SpaceTime]:
@@ -51,10 +51,10 @@ class Algo:
         """
         start: str = self.graph.start_hub.name
         end: str = self.graph.end_hub.name
-        visited: set[str] = {start}
         # (cost, hub_name, turn)
         pq: list[tuple[float, str, int]] = [(0.0, start, 0)]
         min_cost: dict[tuple[str, int], float] = {(start, 0): 0}
+        visited: set[str] = {start}
         parent: dict[SpaceTime, SpaceTime] = {}
 
         while pq:

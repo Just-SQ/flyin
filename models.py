@@ -3,9 +3,8 @@
 Defines the graph primitives (Hub, Connection, Drone) and the Graph container
 that exposes adjacency and lookup helpers used by the pathfinding algorithm.
 """
-from dataclasses import dataclass, field
 from functools import cached_property
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 ZONE_COST: dict[str, float] = {
@@ -16,8 +15,7 @@ ZONE_COST: dict[str, float] = {
 }
 
 
-@dataclass(frozen=True)
-class Hub:
+class Hub(BaseModel):
     """An immutable zone in the network (a graph node).
 
     Attributes:
@@ -27,6 +25,8 @@ class Hub:
         color: Optional display color; ``None`` when unspecified.
         max_drones: Maximum drones allowed in the zone on the same turn.
     """
+
+    model_config = ConfigDict(frozen=True)
 
     name: str
     coordinates: tuple[int, int]
@@ -40,8 +40,7 @@ class Hub:
         return ZONE_COST[self.zone]
 
 
-@dataclass(frozen=True)
-class Connection:
+class Connection(BaseModel):
     """An immutable bidirectional link between two hubs (a graph edge).
 
     Attributes:
@@ -50,13 +49,14 @@ class Connection:
         max_link_cap: Maximum drones that may traverse the link on one turn.
     """
 
+    model_config = ConfigDict(frozen=True)
+
     hub1: str
     hub2: str
     max_link_cap: int = 1
 
 
-@dataclass
-class Drone:
+class Drone(BaseModel):
     """A single drone and the space-time path assigned to it.
 
     Attributes:
@@ -65,7 +65,7 @@ class Drone:
     """
 
     id: int
-    path: list[tuple[Hub, int]] = field(default_factory=list)
+    path: list[tuple[Hub, int]] = []
 
 
 class Graph(BaseModel):
@@ -136,3 +136,15 @@ class Graph(BaseModel):
                (hub1.name == conn.hub2 and hub2.name == conn.hub1):
                 return conn
         raise ValueError(f"No connection between {hub1.name} and {hub2.name}")
+
+    def check_connectivity(self) -> None:
+        seen: set[str] = set()
+
+        def visit(name: str) -> None:
+            seen.add(name)
+            for nb in self.neighbors[name]:
+                if nb.name not in seen:
+                    visit(nb.name)
+        visit(self.start_hub.name)
+        if len(seen) != len(self.hubs):
+            raise ValueError("disconnected network")

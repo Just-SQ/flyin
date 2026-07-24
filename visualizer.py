@@ -9,8 +9,8 @@ import matplotlib.colors as mcolors
 import matplotlib.patheffects as pe
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-from modelsV2 import Drone, Hub
-from algoV2 import Algo
+from models import Drone, Hub
+from algo import Algo
 
 
 class Visualization:

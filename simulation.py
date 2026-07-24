@@ -3,9 +3,9 @@
 Consumes the paths produced by the planner and, each turn, emits the required
 text output and advances the animated visualization until all drones arrive.
 """
-from algoV2 import Algo
-from modelsV2 import Drone
-from myviz import Visualization
+from algo import Algo
+from models import Drone
+from visualizer import Visualization
 
 
 class Simulation:
