@@ -34,7 +34,8 @@ class Simulation:
         turn: int = 0
         while not self._all_arrived(turn):
             movements: list[str] = self._all_movements_by_turn(turn)
-            print(" ".join(movements))
+            if movements:
+                print(" ".join(movements))
             self.viz.animate(turn)
             turn += 1
         self.viz.show()
@@ -63,12 +64,17 @@ class Simulation:
             drone: The drone to inspect.
 
         Returns:
-            A move string such as ``D1-goal`` (or ``D1-a->b`` while in transit
-            toward a restricted zone), or "" if the drone does not move.
+            A move string such as ``D1-goal`` (or ``D1-a-b`` while in transit
+            toward a restricted zone, named after the connection), or "" if
+            the drone does not move.
         """
         for i, step in enumerate(drone.path):
             hub, current_turn = step
             if turn == current_turn:
+                # A drone already in this hub on the previous step is waiting,
+                # not moving, so it must be omitted from the turn's output.
+                if i > 0 and drone.path[i - 1][0] == hub:
+                    return ""
                 if hub.name == self.algo.graph.start_hub.name:
                     return ""
                 return f"D{drone.id}-{hub.name}"

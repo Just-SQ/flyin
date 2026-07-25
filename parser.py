@@ -92,17 +92,17 @@ class MapParser:
                     raise ValueError(
                         f"Line {line_nb}: multiple start_hub definitions"
                     )
-                self._start_hub = self._hub_parsing(rest, line_nb)
+                self._start_hub = self._hub_parsing(rest, line_nb, True)
                 self._start_hub["max_drones"] = self._nb_drones
             case "end_hub":
                 if self._end_hub:
                     raise ValueError(
                         f"Line {line_nb}: multiple end_hub definitions"
                     )
-                self._end_hub = self._hub_parsing(rest, line_nb)
+                self._end_hub = self._hub_parsing(rest, line_nb, True)
                 self._end_hub["max_drones"] = self._nb_drones
             case "hub":
-                self._hubs.append(self._hub_parsing(rest, line_nb))
+                self._hubs.append(self._hub_parsing(rest, line_nb, False))
             case "connection":
                 self._connections.append(
                     self._connections_parsing(rest, line_nb)
@@ -114,7 +114,9 @@ class MapParser:
                     "end_hub or connection)"
                 )
 
-    def _hub_parsing(self, rest: str, line_nb: int) -> dict[str, Any]:
+    def _hub_parsing(
+            self, rest: str, line_nb: int, is_start_or_end: bool
+         ) -> dict[str, Any]:
         """Parse a hub definition (``<name> <x> <y> [metadata]``).
 
         Args:
@@ -195,15 +197,17 @@ class MapParser:
                     case "color":
                         result["color"] = meta_value
                     case "max_drones":
-                        try:
-                            result["max_drones"] = int(meta_value)
-                            if result["max_drones"] <= 0:
-                                raise ValueError()
-                        except ValueError:
-                            raise ValueError(
-                                f"Line {line_nb}: "
-                                "max_drones must be a valid positive integer"
-                            )
+                        if not is_start_or_end:
+                            try:
+                                result["max_drones"] = int(meta_value)
+                                if result["max_drones"] <= 0:
+                                    raise ValueError()
+                            except ValueError:
+                                raise ValueError(
+                                    f"Line {line_nb}: "
+                                    "max_drones must be a "
+                                    "valid positive integer"
+                                )
                     case _:
                         raise ValueError(
                             f"Line {line_nb}: "

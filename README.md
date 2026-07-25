@@ -23,7 +23,7 @@ algorithm are implemented from scratch.
 
 ### Requirements
 
-- Python **3.10+** (developed on 3.14)
+- Python **3.10+**
 - [uv](https://docs.astral.sh/uv/) for dependency management
 - Dependencies: `matplotlib`, `pydantic` (installed automatically)
 
@@ -121,10 +121,29 @@ the time dimension is first-class:
 ### Simulation & output (`simulation.py`)
 
 Each turn, the simulation prints all drone movements for that turn,
-space-separated, in the format `D<ID>-<zone>` (or `D<ID>-<from>-><to>` while a
-drone is in transit toward a restricted zone across two turns). Delivered
+space-separated, in the format `D<ID>-<zone>` (or `D<ID>-<from>-<to>`, named
+after the connection, while a drone is in transit toward a restricted zone
+across two turns). Drones that do not move that turn are omitted, and delivered
 drones are dropped from the output. The simulation ends when every drone has
 reached the end zone.
+
+### Example input & output
+
+Running the `maps/medium/03_priority_puzzle.txt` map (5 drones) prints:
+
+```
+D1-fast_junction D4-start-slow_path1
+D1-fast_path D2-fast_junction D4-slow_path1
+D1-merge_point D2-fast_path D3-fast_junction D4-slow_path2
+D1-goal D2-merge_point D3-fast_path D4-merge_point D5-fast_junction
+D2-goal D3-merge_point D4-goal D5-fast_path
+D3-goal D5-merge_point
+D5-goal
+```
+
+`D4-start-slow_path1` on the first line shows D4 *in flight* toward the
+`restricted` zone `slow_path1` (a 2-turn move): it occupies the connection on
+turn 1 and only arrives on turn 2 (`D4-slow_path1`).
 
 ## Visual Representation
 

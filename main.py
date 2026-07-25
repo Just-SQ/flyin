@@ -12,7 +12,7 @@ from simulation import Simulation
 
 def main() -> None:
     """Load a map, build the graph, and run the drone simulation."""
-    path: str = "maps/easy/01_linear_path.txt"
+    path: str = "maps/challenger/01_the_impossible_dream.txt"
     p: MapParser = MapParser(path)
     p.parse()
     graph: Graph = Graph(

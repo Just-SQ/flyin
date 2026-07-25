@@ -138,9 +138,21 @@ class Graph(BaseModel):
         raise ValueError(f"No connection between {hub1.name} and {hub2.name}")
 
     def check_connectivity(self) -> None:
+        """Ensure every hub belongs to the start hub's connected component.
+
+        Runs a DFS from the start hub over all connections
+        (zone types are ignored here) and compares the number of hubs reached
+        with the total number of hubs. Any hub not reachable from start is an
+        extra, disconnected zone that makes the map malformed.
+
+        Raises:
+            ValueError: If the graph contains one or more hubs that are not
+                connected to the start hub's component.
+        """
         seen: set[str] = set()
 
         def visit(name: str) -> None:
+            """Recursively mark ``name`` and every hub reachable from it."""
             seen.add(name)
             for nb in self.neighbors[name]:
                 if nb.name not in seen:
